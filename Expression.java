@@ -15,8 +15,7 @@ public abstract class Expression {
 
     // Parse an expresssion tree given an array of tokens and return the
     // resulting tree. InvalidExpressionException is raised in cases of invalid input.
-    public static Expression parsePostOrder(String expression) throws InvalidExpressionException
-    {
+    public static Expression parsePostOrder(String expression) throws InvalidExpressionException {
         // Let's use Scanner as a tokenizer!
         Scanner tokenizer = new Scanner(expression);
         Stack<Expression> stack = new Stack<Expression>();
