@@ -13,7 +13,7 @@ public abstract class Expression {
     }
 
     /*
-     * Parse an expresssion tree given a string return the resulting tree.
+     * Parse an expresssion tree given a string and return the resulting tree.
      * InvalidExpressionException is raised in cases of invalid input.
      */
     public static Expression parsePostOrder(String expression)
