@@ -21,20 +21,11 @@ public abstract class Expression {
         Scanner tokenizer = new Scanner(expression);
         Stack<Expression> stack = new Stack<Expression>();
         while (tokenizer.hasNext()) {
-            String token = tokenizer.next();
-            try {
-                double number = Double.parseDouble(token);
-                stack.push(new Number(number));
-            } catch (NumberFormatException e) {
-                // If control reaches here it's because the token is not a
-                // number, so it must be an operator.
-                if (stack.size() < 2) {
-                    throw new InvalidExpressionException(
-                            "Not enough parameters for " + token);
-                }
-                Expression right = stack.pop();
-                Expression left = stack.pop();
-                stack.push(BinaryOperator.fromSymbol(token, left, right));
+            if(tokenizer.hasNextDouble()) {
+                stack.push(new Number(tokenizer.nextDouble()));
+            } else {
+                String token = tokenizer.next();
+                stack.push(Operator.fromSymbol(token, stack));
             }
         }
 
@@ -48,32 +39,57 @@ public abstract class Expression {
 }
 
 class Number extends Expression {
-    double number;
+    double value;
 
-    public Number(double num) {
-        super();
-        this.number = num;
+    public Number(double value) {
+        this.value = value;
     }
 
     public double evaluate() {
-        return this.number;
+        return this.value;
     }
 
     public String toString() {
-        return Double.toString(this.number);
+        return Double.toString(this.value);
     }
 }
 
-abstract class BinaryOperator extends Expression {
+
+abstract class Operator extends Expression {
+    String symbol;
+
+    public Operator(String symbol) {
+        this.symbol = symbol;
+    }
+
+    public static Operator fromSymbol(String symbol, Stack<Expression> parseStack)
+        throws InvalidExpressionException {
+        if (symbol.equals("+")) {
+            return new AddOperator(parseStack);
+        } else if (symbol.equals("-")) {
+            return new SubtractOperator(parseStack);
+        } else if (symbol.equals("*")) {
+            return new MultiplyOperator(parseStack);
+        } else if (symbol.equals("/")) {
+            return new DivideOperator(parseStack);
+        } else {
+            throw new InvalidExpressionException("Invalid operator: " + symbol);
+        }
+    }
+}
+
+abstract class BinaryOperator extends Operator {
     Expression left;
     Expression right;
 
-    protected abstract String getOperatorSymbol();
-
-    public BinaryOperator(Expression left, Expression right) {
-        super();
-        this.left = left;
-        this.right = right;
+    public BinaryOperator(String symbol, Stack<Expression> parseStack) {
+        super(symbol);
+        if(parseStack.size() < 2) {
+            throw new InvalidExpressionException("Not enough parameters for operator " +
+                    symbol);
+        }
+        this.right = parseStack.pop();
+        this.left = parseStack.pop();
     }
 
     public String toString() {
@@ -81,38 +97,20 @@ abstract class BinaryOperator extends Expression {
     }
 
     public String toInOrder() {
-        return "(" + this.left.toInOrder() + " " + this.getOperatorSymbol()
+        return "(" + this.left.toInOrder() + " " + this.symbol
                 + " " + this.right.toInOrder() + ")";
     }
 
     public String toPostOrder() {
         return this.left.toPostOrder() + " " + this.right.toPostOrder() + " "
-                + this.getOperatorSymbol();
+                + this.symbol;
     }
 
-    public static BinaryOperator fromSymbol(String symbol, Expression left,
-            Expression right) throws InvalidExpressionException {
-        if (symbol.equals("+")) {
-            return new AddOperator(left, right);
-        } else if (symbol.equals("-")) {
-            return new SubtractOperator(left, right);
-        } else if (symbol.equals("*")) {
-            return new MultiplyOperator(left, right);
-        } else if (symbol.equals("/")) {
-            return new DivideOperator(left, right);
-        } else {
-            throw new InvalidExpressionException("Invalid operator: " + symbol);
-        }
-    }
 }
 
 final class AddOperator extends BinaryOperator {
-    protected AddOperator(Expression left, Expression right) {
-        super(left, right);
-    }
-
-    protected String getOperatorSymbol() {
-        return "+";
+    protected AddOperator(Stack<Expression> parseStack) {
+        super("+", parseStack);
     }
 
     public double evaluate() {
@@ -121,12 +119,8 @@ final class AddOperator extends BinaryOperator {
 }
 
 final class SubtractOperator extends BinaryOperator {
-    protected SubtractOperator(Expression left, Expression right) {
-        super(left, right);
-    }
-
-    protected String getOperatorSymbol() {
-        return "-";
+    protected SubtractOperator(Stack<Expression> parseStack) {
+        super("-", parseStack);
     }
 
     public double evaluate() {
@@ -135,33 +129,25 @@ final class SubtractOperator extends BinaryOperator {
 }
 
 final class MultiplyOperator extends BinaryOperator {
-    protected MultiplyOperator(Expression left, Expression right) {
-        super(left, right);
+    protected MultiplyOperator(Stack<Expression> parseStack) {
+        super("*", parseStack);
     }
 
-    protected String getOperatorSymbol() {
-        return "*";
-    }
-
-    public double evaluate() throws RuntimeException {
+    public double evaluate() {
         return this.left.evaluate() * this.right.evaluate();
     }
 }
 
 final class DivideOperator extends BinaryOperator {
-    protected DivideOperator(Expression left, Expression right) {
-        super(left, right);
+    protected DivideOperator(Stack<Expression> parseStack) {
+        super("/", parseStack);
     }
 
-    protected String getOperatorSymbol() {
-        return "/";
-    }
-
-    public double evaluate() {
+    public double evaluate() throws DivideByZeroException {
         double left = this.left.evaluate();
         double right = this.right.evaluate();
         if (right == 0) {
-            throw new RuntimeException("Division by zero in " + this.toString());
+            throw new DivideByZeroException("Division by zero in " + this.toString());
         }
         return left / right;
     }

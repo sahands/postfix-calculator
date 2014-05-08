@@ -1,14 +1,17 @@
 import java.util.Scanner;
 
 public class PostfixCLI {
+    private static String promptForInput(Scanner in) {
+        System.out.print(">>> ");
+        return in.nextLine();
+    }
+
     public static void main(String[] args) {
-        System.out.println("Enter postfix expression to evaluate, 'exit' to exit.");
         Scanner in = new Scanner(System.in);
+        System.out.println("Enter postfix expression to evaluate, 'exit' to exit.");
         while (true) {
             try {
-                System.out.print(">>> ");
-                String input = in.nextLine();
-
+                String input = promptForInput(in);
                 if (input.equals("exit")) {
                     break;
                 }
@@ -19,13 +22,8 @@ public class PostfixCLI {
                                   expression.evaluate());
             } catch (InvalidExpressionException e) {
                 System.out.println("Invalid expression: " + e.getMessage());
-                continue;
-            } catch (RuntimeException e) {
-                System.out.println("Runtime error: " + e.getMessage());
-                continue;
-            } catch (Exception e) {
-                System.out.println("Unknown error: " + e.getMessage());
-                continue;
+            } catch (DivideByZeroException e) {
+                System.out.println(e.getMessage());
             }
         }
     }
